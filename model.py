@@ -5,7 +5,7 @@ from transformers import AutoModel, AutoTokenizer
 
 class Climodel(nn.Module):
     def __init__(self):
-        super(Climodel, self).__init__()
+        super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         self.model = AutoModel.from_pretrained("distilbert-base-uncased")
         self.dropout = nn.Dropout(0.2)
@@ -19,4 +19,4 @@ class Climodel(nn.Module):
         return logits
 
     def tokenize(self, texts):
-        return self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
+        return self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt", model_max_length=512)
