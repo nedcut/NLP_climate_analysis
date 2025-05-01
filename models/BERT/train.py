@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from transformers import AutoTokenizer, Trainer
 from sklearn.metrics import classification_report
-from model import ClimateModel, ClimateDataset, compute_metrics, get_training_args, predict_sentiment
+from NLP_climate_analysis.models.BERT.model import ClimateModel, ClimateDataset, compute_metrics, get_training_args, predict_sentiment
 
 def main():
     # Check for CUDA

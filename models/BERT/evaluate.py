@@ -1,11 +1,11 @@
 import pandas as pd
-import torch
+import torch 
 import numpy as np
 from transformers import AutoTokenizer
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from model import ClimateModel
+from NLP_climate_analysis.models.BERT.model import ClimateModel
 
 def load_model(model_path):
     """Load the saved model"""
