@@ -18,6 +18,9 @@ df['message'] = df['message'].astype(str).apply(clean_message)
 # get rid of rows with sentiment == 2 (news)
 df = df[df['sentiment'] != 2]
 
+# add one to each sentiment so it ranges from 0 to 2 instead of -1 to 1
+df['sentiment'] = df['sentiment'].apply(lambda x: x + 1)
+
 # print top 10 rows (for testing)
 # print(df.head(10))
 
@@ -36,5 +39,4 @@ train_sentiment_counts.plot(kind='pie', autopct='%1.1f%%', startangle=90)
 plt.title('Sentiment Distribution in Training Set')
 plt.ylabel('')
 plt.show()
-# show a pie chart of the sentiment distribution in the test set
 test_sentiment_counts = test_df['sentiment'].value_counts()     
