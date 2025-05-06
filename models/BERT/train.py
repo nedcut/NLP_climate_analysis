@@ -2,7 +2,8 @@ import pandas as pd
 import torch
 from transformers import AutoTokenizer, Trainer
 from sklearn.metrics import classification_report
-from model import ClimateModel, ClimateDataset, compute_metrics, get_training_args, predict_sentiment
+from models.BERT.model import ClimateModel, ClimateDataset
+from utils import get_training_args, compute_metrics, predict_sentiment
 
 def main():
     # Check for CUDA
@@ -11,8 +12,14 @@ def main():
     
     # Load data
     print("Loading data...")
-    train_df = pd.read_csv('train_data.csv')
-    test_df = pd.read_csv('test_data.csv')
+    train_df = pd.read_csv('data/train_data.csv')
+    test_df = pd.read_csv('data/test_data.csv')
+
+    # Remap sentiment labels: -1 -> 0 (anti), 0 -> 1 (neutral), 1 -> 2 (pro)
+    train_df['sentiment'] = train_df['sentiment'].map({-1: 0, 0: 1, 1: 2})
+    test_df['sentiment'] = test_df['sentiment'].map({-1: 0, 0: 1, 1: 2})
+    print("Train sentiment unique values (remapped):", train_df['sentiment'].unique())
+    print("Test sentiment unique values (remapped):", test_df['sentiment'].unique())
     
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
@@ -54,7 +61,7 @@ def main():
     model = ClimateModel()
     
     # Get training arguments
-    training_args = get_training_args(output_dir='./results')
+    training_args = get_training_args(output_dir='./results/BERT')
     
     # Initialize trainer
     trainer = Trainer(
@@ -85,18 +92,27 @@ def main():
     print("\nClassification Report:")
     print(classification_report(true_labels, predicted_labels, target_names=target_names))
     
+    # Save BERT results for comparison
+    bert_results = pd.DataFrame({
+        'message': test_df['message'],
+        'true_sentiment': test_df['sentiment'].map({0: 'anti', 1: 'neutral', 2: 'pro'}),
+        'bert_sentiment': pd.Series(predicted_labels).map({0: 'anti', 1: 'neutral', 2: 'pro'})
+    })
+    bert_results.to_csv('results/BERT/bert_results.csv', index=False)
+    print("BERT results saved to results/BERT/bert_results.csv")
+    
     # Save model
     print("Saving model...")
-    trainer.save_model('./saved_model')
-    tokenizer.save_pretrained('./saved_model')
+    trainer.save_model('./saved_models/BERT')
+    tokenizer.save_pretrained('./saved_models/BERT')
     
     print("Model training and evaluation complete!")
     
     # Example prediction
     example_texts = [
-        "Climate change is a real threat that requires immediate action.",
-        "I'm not sure if humans are causing climate change or if it's natural.",
-        "Global warming is a hoax created by scientists for grant money."
+        "Climate change is a real threat that requires immediate action.",          # pro
+        "I'm not sure if humans are causing climate change or if it's natural.",    # neutral
+        "Global warming is a hoax created by scientists for grant money."           # anti
     ]
     
     predictions = predict_sentiment(model, tokenizer, example_texts)

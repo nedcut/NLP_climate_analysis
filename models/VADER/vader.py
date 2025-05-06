@@ -7,7 +7,7 @@ from sklearn.metrics import classification_report
 # Setup
 nltk.download('vader_lexicon')
 script_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(script_dir, 'test_data.csv')
+file_path = os.path.join(script_dir, '../../data/test_data.csv')
 df = pd.read_csv(file_path)
 
 # Initialize VADER
@@ -33,6 +33,11 @@ df['vader_sentiment'] = df['message'].astype(str).apply(get_vader_sentiment)
 df['true_sentiment'] = df['true_sentiment'].astype(str)
 df['vader_sentiment'] = df['vader_sentiment'].astype(str)
 
+# Save VADER results
+vader_results_path = os.path.join(script_dir, '../../results/VADER/vader_results.csv')
+df[['message', 'true_sentiment', 'vader_sentiment']].to_csv(vader_results_path, index=False)
+print(f"VADER results saved to {vader_results_path}")
+
 # Evaluation
 print("Classification Report")
 print(classification_report(
@@ -43,7 +48,6 @@ print(classification_report(
 ))
 
 print(df['true_sentiment'].value_counts())
-
 
 # Print common misclassifications
 print("\nTop Misclassified Examples:")
