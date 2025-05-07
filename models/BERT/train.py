@@ -1,5 +1,7 @@
 import pandas as pd
 import torch
+import numpy as np
+from sklearn.utils.class_weight import compute_class_weight
 from transformers import AutoTokenizer, Trainer
 from sklearn.metrics import classification_report
 from models.BERT.model import ClimateModel, ClimateDataset
@@ -27,6 +29,16 @@ def main():
     # Ensure all messages are strings and handle potential NaN values
     train_df['message'] = train_df['message'].fillna('').astype(str)
     test_df['message'] = test_df['message'].fillna('').astype(str)
+    
+    # Check for class imbalance and compute class weights
+    class_labels = np.unique(train_df['sentiment'])
+    class_weights = compute_class_weight(
+        class_weight='balanced',
+        classes=class_labels,
+        y=train_df['sentiment']
+    )
+    class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
+    print("Class weights:", class_weights)
     
     # Tokenize texts
     print("Tokenizing texts...")
@@ -58,7 +70,7 @@ def main():
     )
     
     # Initialize model
-    model = ClimateModel()
+    model = ClimateModel(class_weights=class_weights)
     
     # Get training arguments
     training_args = get_training_args(output_dir='./results/BERT')
