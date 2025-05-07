@@ -34,7 +34,6 @@ def main():
         state_dict_path = os.path.join(model_path, 'pytorch_model.bin') # Fallback
 
     if os.path.exists(state_dict_path):
-        print(f"Loading model weights from {state_dict_path}...")
         if state_dict_path.endswith(".safetensors"):
             from safetensors.torch import load_file
             state_dict = load_file(state_dict_path)
@@ -44,7 +43,6 @@ def main():
         print("Custom ClimateModel weights loaded successfully.")
     else:
         print(f"Error: Could not find model weights file (model.safetensors or pytorch_model.bin) in {model_path}.")
-        print("Please ensure the model was saved correctly and the path is accurate.")
         return # Exit if weights are not found
 
     model.to(device)
@@ -67,7 +65,6 @@ def main():
         return
 
     # Predict sentiment
-    print("Predicting sentiments...")
     predictions = predict_sentiment(model, tokenizer, tweets, device=device)
     
     # Create output DataFrame
@@ -81,9 +78,6 @@ def main():
     output_df.to_csv(output_csv_path, index=False)
     print(f"Predictions saved to {output_csv_path}")
 
-    # Visualize sentiment distribution
-    print("Visualizing sentiment distribution...")
-    
     # Load training data for comparison
     train_df = pd.read_csv(training_data_path)
     sentiment_map_train = {-1: 'anti', 0: 'neutral', 1: 'pro'}
@@ -95,7 +89,7 @@ def main():
     labels = biden_sentiment_counts.index.tolist()
     biden_sizes = [biden_sentiment_counts.get(label, 0) for label in labels]
 
-    fig, axs = plt.subplots(1, 2 if train_sentiment_counts is not None else 1, figsize=(12 if train_sentiment_counts is not None else 6, 6))
+    axs = plt.subplots(1, 2 if train_sentiment_counts is not None else 1, figsize=(12 if train_sentiment_counts is not None else 6, 6))
     
     if train_sentiment_counts is not None:
         train_labels = train_sentiment_counts.index.tolist()

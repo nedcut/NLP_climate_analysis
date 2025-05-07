@@ -14,15 +14,13 @@ def main():
 
     # Check for CUDA
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
+    
 
     # Load tokenizer
-    print(f"Loading tokenizer from {model_path}...")
     tokenizer = AutoTokenizer.from_pretrained(model_path)
 
     # Load ClimateModel
-    print(f"Loading custom ClimateModel from {model_path}...")
-    from models.BERT.model import ClimateModel # Path to ClimateModel definition
+    from models.BERT.model import ClimateModel 
     
     # Instantiate model
     model = ClimateModel() 
@@ -38,12 +36,10 @@ def main():
     model.eval()
     
     # Load data
-    print(f"Loading data from {input_path}...")
     df = pd.read_csv(input_path)
     df = df['message'].astype(str).tolist()
     
     # predict sentiment
-    print("Predicting sentiment...")
     predictions = predict_sentiment(model, tokenizer, df, device=device)
     
     # output dataframe
@@ -57,13 +53,11 @@ def main():
     print(f"Predictions saved to {output_csv_path}")
     
     # visualize results
-    print("Visualizing results...")
-    
     sentiment_counts = output_df['predicted_sentiment'].value_counts(normalize=True)
     labels = sentiment_counts.index.tolist()
     sizes = sentiment_counts.values.tolist()
 
-    fig, ax = plt.subplots(figsize=(6, 6))
+    ax = plt.subplots(figsize=(6, 6))
     ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
     ax.set_title('News Tweets Sentiment Distribution')
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
