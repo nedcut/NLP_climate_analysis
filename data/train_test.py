@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 def clean_message(text):
     text = re.sub(r'^RT\s+@\w+:\s*', '', text)  # remove retweet prefix
@@ -9,32 +10,30 @@ def clean_message(text):
     text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)  # remove URLs
     return text
 
-# load data
-df = pd.read_csv('twitter_sentiment_data.csv')
-
-# clean data
+# Load and clean data
+df = pd.read_csv('data/twitter_sentiment_data.csv')
 df['message'] = df['message'].astype(str).apply(clean_message)
+df = df[df['sentiment'] != 2]  # Remove 'news' category
 
-# get rid of rows with sentiment == 2 (news)
-df = df[df['sentiment'] != 2]
+# First split: Train+Dev and Test
+train_val_df, test_df = train_test_split(
+    df, test_size=0.2, random_state=42, stratify=df['sentiment']
+)
 
-# print top 10 rows (for testing)
-# print(df.head(10))
+# Second split: Train and Dev (80% train, 20% dev of the 80%)
+train_df, dev_df = train_test_split(
+    train_val_df, test_size=0.2, random_state=42, stratify=train_val_df['sentiment']
+)
 
-# split data into train and test sets
-train_df, test_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df['sentiment'])
+# Save to CSV
+train_df.to_csv('data/train_data.csv', index=False)
+dev_df.to_csv('data/dev_data.csv', index=False)
+test_df.to_csv('data/test_data.csv', index=False)
 
-# save train and test sets to csv files
-train_df.to_csv('train_data.csv', index=False)
-test_df.to_csv('test_data.csv', index=False)
-
-# show a pie chart of the sentiment distribution in the training set
-# kinda just did this for practice with matplotlib
-import matplotlib.pyplot as plt
-train_sentiment_counts = train_df['sentiment'].value_counts()
-train_sentiment_counts.plot(kind='pie', autopct='%1.1f%%', startangle=90)
-plt.title('Sentiment Distribution in Training Set')
-plt.ylabel('')
-plt.show()
-# show a pie chart of the sentiment distribution in the test set
-test_sentiment_counts = test_df['sentiment'].value_counts()     
+# Optional: Visualize sentiment distributions
+for name, split in [('Training', train_df), ('Development', dev_df), ('Test', test_df)]:
+    sentiment_counts = split['sentiment'].value_counts()
+    sentiment_counts.plot(kind='pie', autopct='%1.1f%%', startangle=90)
+    plt.title(f'Sentiment Distribution in {name} Set')
+    plt.ylabel('')
+    plt.show()
