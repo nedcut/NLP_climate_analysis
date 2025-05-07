@@ -31,23 +31,37 @@ def compute_metrics(eval_pred):
         'f1': f1,
     }
 
-def predict_sentiment(model, tokenizer, texts, device='cpu'):
+def predict_sentiment(model, tokenizer, texts, device='cpu', batch_size=32):
     model.eval()
     model.to(device)
-    encodings = tokenizer(
-        texts,
-        truncation=True,
-        padding=True,
-        max_length=128,
-        return_tensors='pt'
-    )
-    encodings = {k: v.to(device) for k, v in encodings.items()}
-    with torch.no_grad():
-        outputs = model(**encodings)
-        if isinstance(outputs, tuple):
-            logits = outputs[1] if len(outputs) > 1 else outputs[0]
-        else:
-            logits = outputs
-        preds = torch.argmax(logits, dim=1).cpu().numpy()
-    label_map = {0: 'anti', 1: 'neutral', 2: 'pro'}
-    return [label_map[p] for p in preds]
+    all_preds = []
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i:i + batch_size]
+        if not batch_texts: # Should not happen with correct loop logic but good for safety
+            continue
+            
+        encodings = tokenizer(
+            batch_texts,
+            truncation=True,
+            padding=True,
+            max_length=128,
+            return_tensors='pt'
+        )
+        encodings = {k: v.to(device) for k, v in encodings.items()}
+        
+        with torch.no_grad():
+            outputs = model(**encodings)
+            if isinstance(outputs, tuple):
+                logits = outputs[1] if len(outputs) > 1 and outputs[1] is not None else outputs[0]
+            else:
+                logits = outputs
+            
+            if hasattr(logits, 'logits'): # Handle cases where logits are an attribute of the output object
+                logits = logits.logits
+
+            preds = torch.argmax(logits, dim=1).cpu().numpy()
+        
+        label_map = {0: 'anti', 1: 'neutral', 2: 'pro'}
+        all_preds.extend([label_map[p] for p in preds])
+            
+    return all_preds
