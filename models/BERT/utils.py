@@ -2,22 +2,28 @@ from transformers import TrainingArguments
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import torch
 
-def get_training_args(output_dir='./results/BERT'):
+def get_training_args(
+    output_dir: str = './results/BERT',
+    learning_rate: float = 3e-5,
+    per_device_train_batch_size: int = 16,
+    num_train_epochs: int = 3,
+    weight_decay: float = 0.01,
+    warmup_steps: int = 100
+):
     return TrainingArguments(
         output_dir=output_dir,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
-        learning_rate=5e-5,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
-        num_train_epochs=4,
-        weight_decay=0.01,
+        learning_rate=learning_rate,
+        per_device_train_batch_size=per_device_train_batch_size,
+        per_device_eval_batch_size=per_device_train_batch_size * 2,
+        num_train_epochs=num_train_epochs,
+        weight_decay=weight_decay,
+        warmup_steps=warmup_steps,
         logging_dir='./logs',
         logging_steps=50,
-        save_total_limit=2,
+        eval_strategy='epoch',
+        save_strategy='epoch',
         load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        seed=42
+        metric_for_best_model='f1',
     )
 
 def compute_metrics(pred):

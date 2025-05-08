@@ -2,12 +2,23 @@ import pandas as pd
 import torch
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
-from transformers import AutoTokenizer, Trainer
+from transformers import AutoTokenizer, Trainer, EarlyStoppingCallback
 from sklearn.metrics import classification_report
-from model import ClimateModel, ClimateDataset
-from utils import get_training_args, compute_metrics, predict_sentiment
+from models.BERT.model import ClimateModel, ClimateDataset
+from models.BERT.utils import get_training_args, compute_metrics, predict_sentiment
+import argparse
 
 def main():
+    parser = argparse.ArgumentParser(description='Fine-tune BERT climate sentiment model')
+    parser.add_argument('--learning_rate', type=float, default=3e-5)
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--epochs', type=int, default=3)
+    parser.add_argument('--weight_decay', type=float, default=0.01)
+    parser.add_argument('--warmup_steps', type=int, default=100)
+    parser.add_argument('--max_length', type=int, default=128)
+    parser.add_argument('--patience', type=int, default=2, help='Early stopping patience in eval epochs')
+    args = parser.parse_args()
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
@@ -18,9 +29,9 @@ def main():
 
     # Label remapping: -1 → 0, 0 → 1, 1 → 2
     label_map = {-1: 0, 0: 1, 1: 2}
-    train_df['sentiment'] = train_df['sentiment'].map(label_map)
-    dev_df['sentiment'] = dev_df['sentiment'].map(label_map)
-    test_df['sentiment'] = test_df['sentiment'].map(label_map)
+    train_df['sentiment'] = train_df['sentiment'].dropna().map(label_map)
+    dev_df['sentiment'] = dev_df['sentiment'].dropna().map(label_map)
+    test_df['sentiment'] = test_df['sentiment'].dropna().map(label_map)
 
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
@@ -31,7 +42,7 @@ def main():
             df['message'].tolist(),
             truncation=True,
             padding=True,
-            max_length=128,
+            max_length=args.max_length,
             return_tensors='pt'
         )
         return ClimateDataset(
@@ -48,7 +59,14 @@ def main():
     model = ClimateModel()
 
     # Training args
-    training_args = get_training_args(output_dir='./results/BERT')
+    training_args = get_training_args(
+        output_dir='./results/BERT',
+        learning_rate=args.learning_rate,
+        per_device_train_batch_size=args.batch_size,
+        num_train_epochs=args.epochs,
+        weight_decay=args.weight_decay,
+        warmup_steps=args.warmup_steps
+    )
 
     # Trainer
     trainer = Trainer(
@@ -57,6 +75,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=dev_dataset,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=args.patience)]
     )
 
     # Train
@@ -64,7 +83,6 @@ def main():
 
     # Save best model
     trainer.save_model('./saved_models/BERT')
-
 
     # Evaluate on test set
     test_outputs = trainer.predict(test_dataset)
@@ -90,7 +108,7 @@ def main():
         "I'm not sure if humans are causing climate change or if it's natural.", #Neutral
         "Global warming is a hoax created by scientists for grant money." #anti
     ]
-    predictions = predict_sentiment(model, tokenizer, example_texts)
+    predictions = predict_sentiment(model, tokenizer, example_texts, batch_size=args.batch_size)
     for text, pred in zip(example_texts, predictions):
         print(f"Text: {text}")
         print(f"Prediction: {pred}\n")
