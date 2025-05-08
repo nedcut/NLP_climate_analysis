@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
 from transformers import AutoTokenizer, Trainer
 from sklearn.metrics import classification_report
-from models.BERT.model import ClimateModel, ClimateDataset
+from model import ClimateModel, ClimateDataset
 from utils import get_training_args, compute_metrics, predict_sentiment
 
 def main():
