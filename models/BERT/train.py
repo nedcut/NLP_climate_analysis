@@ -2,8 +2,9 @@ import pandas as pd
 import torch
 import numpy as np
 from sklearn.utils.class_weight import compute_class_weight
-from transformers import AutoTokenizer, Trainer, EarlyStoppingCallback
 from sklearn.metrics import classification_report
+from transformers import AutoTokenizer, Trainer, EarlyStoppingCallback
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from models.BERT.model import ClimateModel, ClimateDataset
 from models.BERT.utils import get_training_args, compute_metrics, predict_sentiment
 import argparse
@@ -56,7 +57,7 @@ def main():
     test_dataset = tokenize_texts(test_df)
 
     # Model
-    model = ClimateModel()
+    model = ClimateModel().to(device)
 
     # Training args
     training_args = get_training_args(
@@ -65,7 +66,8 @@ def main():
         per_device_train_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         weight_decay=args.weight_decay,
-        warmup_steps=args.warmup_steps
+        warmup_steps=args.warmup_steps,
+        fp16=True
     )
 
     # Trainer
@@ -101,17 +103,17 @@ def main():
     })
     bert_results.to_csv('results/BERT/bert_results.csv', index=False)
 
-    # Example predictions
-    print("\nExample predictions:")
-    example_texts = [
-        "Climate change is a real threat that requires immediate action.", #Pro
-        "I'm not sure if humans are causing climate change or if it's natural.", #Neutral
-        "Global warming is a hoax created by scientists for grant money." #anti
-    ]
-    predictions = predict_sentiment(model, tokenizer, example_texts, batch_size=args.batch_size)
-    for text, pred in zip(example_texts, predictions):
-        print(f"Text: {text}")
-        print(f"Prediction: {pred}\n")
+    # Test predictions
+    # print("\nExample predictions:")
+    # example_texts = [
+    #     "Climate change is a real threat that requires immediate action.", #Pro
+    #     "I'm not sure if humans are causing climate change or if it's natural.", #Neutral
+    #     "Global warming is a hoax created by scientists for grant money." #anti
+    # ]
+    # predictions = predict_sentiment(model, tokenizer, example_texts, batch_size=args.batch_size)
+    # for text, pred in zip(example_texts, predictions):
+    #     print(f"Text: {text}")
+    #     print(f"Prediction: {pred}\n")
 
 if __name__ == "__main__":
     main()

@@ -3,12 +3,13 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import torch
 
 def get_training_args(
-    output_dir: str = './results/BERT',
-    learning_rate: float = 3e-5,
-    per_device_train_batch_size: int = 16,
-    num_train_epochs: int = 3,
-    weight_decay: float = 0.01,
-    warmup_steps: int = 100
+    output_dir= './results/BERT',
+    learning_rate = 3e-5,
+    per_device_train_batch_size = 16,
+    num_train_epochs = 3,
+    weight_decay = 0.01,
+    warmup_steps = 100,
+    fp16 = True,
 ):
     return TrainingArguments(
         output_dir=output_dir,
@@ -24,6 +25,7 @@ def get_training_args(
         save_strategy='epoch',
         load_best_model_at_end=True,
         metric_for_best_model='f1',
+        fp16=fp16
     )
 
 def compute_metrics(pred):
