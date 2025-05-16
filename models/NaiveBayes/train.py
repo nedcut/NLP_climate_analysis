@@ -107,6 +107,7 @@ if __name__ == '__main__':
     train_path = "data/train_data.csv"
     dev_path = "data/dev_data.csv"
     test_path = "data/test_data.csv"
+    biden_path = "data/biden_cleaned_tweets.csv"
     
     saved_model_dir = "saved_models/NaiveBayes"
     model_save_path = os.path.join(saved_model_dir, "naive_bayes_model.joblib")
@@ -129,3 +130,24 @@ if __name__ == '__main__':
             evaluate_model(test_path, model_save_path, vector_save_path, dataset_name="test")
         else:
             print(f"\nWarning: Test data not found at {test_path}. Skipping test set evaluation.")
+
+        # Evaluate on Biden Set
+        if os.path.exists(biden_path):
+            df = pd.read_csv(biden_path)
+            texts = df["Text"].astype(str).str.lower().tolist()
+            loaded_model = joblib.load(model_save_path)
+            loaded_vectorizer = joblib.load(vector_save_path)
+            nb_model_biden = NaiveBayesModel()
+            nb_model_biden.model = loaded_model
+            nb_model_biden.vectorizer = loaded_vectorizer
+            predictions = nb_model_biden.predict(texts)
+            output_map = {0: 'anti', 1: 'neutral', 2: 'pro'}
+            mapped_predictions = [output_map.get(label, label) for label in predictions]
+            results_df = pd.DataFrame({
+                'text': texts,
+                'predicted_label': mapped_predictions
+            })
+            results_save_path = os.path.join("results", "NaiveBayes", "naive_bayes_biden_results.csv")
+            os.makedirs(os.path.dirname(results_save_path), exist_ok=True)
+            results_df.to_csv(results_save_path, index=False)
+            print(f"Biden tweets results saved to {results_save_path}")

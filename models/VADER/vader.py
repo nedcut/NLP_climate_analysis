@@ -24,6 +24,7 @@ os.makedirs(results_dir, exist_ok=True)
 train_df = pd.read_csv(os.path.join(data_dir, 'train_data.csv'))
 dev_df = pd.read_csv(os.path.join(data_dir, 'dev_data.csv'))
 test_df = pd.read_csv(os.path.join(data_dir, 'test_data.csv'))
+biden_df = pd.read_csv(os.path.join(data_dir, 'biden_cleaned_tweets.csv'))
 
 # Label mapping
 label_map = {-1: 'anti', 0: 'neutral', 1: 'pro'}
@@ -68,6 +69,12 @@ for name, df in zip(['Train', 'Dev', 'Test'], [train_df, dev_df, test_df]):
         labels=['anti', 'neutral', 'pro'],
         target_names=['anti', 'neutral', 'pro']
     ))
+
+# Test on unlabeled biden data, giving each tweet a sentiment label
+biden_df['compound'] = biden_df['Text'].apply(lambda x: sia.polarity_scores(x)['compound'])
+biden_df['vader_sentiment'] = biden_df['compound'].apply(lambda s: get_vader_sentiment(s, pos_thresh, neg_thresh))
+biden_results_path = os.path.join(results_dir, 'biden_results.csv')
+biden_df[['Text', 'vader_sentiment']].to_csv(biden_results_path, index=False)
 
 # Save test results
 test_results_path = os.path.join(results_dir, 'vader_results.csv')
